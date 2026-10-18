@@ -14,16 +14,6 @@ use crate::alg_layered::options_gen::GraphProperties;
 use crate::alg_layered::phases::PipelineStep;
 use crate::alg_layered::processors;
 
-/// A step an embedding application runs on every graph after crossing
-/// minimization and before node placement; not in ELK.
-pub static BEFORE_NODE_PLACEMENT: std::sync::OnceLock<fn(&mut LGraphArena, LGraphId)> = std::sync::OnceLock::new();
-
-fn before_node_placement(a: &mut LGraphArena, graph: LGraphId) {
-    if let Some(step) = BEFORE_NODE_PLACEMENT.get() {
-        step(a, graph);
-    }
-}
-
 pub fn do_layout(a: &mut LGraphArena, lgraph: LGraphId) -> Result<(), String> {
     // the random number generator
     let mut random = make_random(a, lgraph);
@@ -151,10 +141,7 @@ fn run_step(
         PipelineStep::CycleBreaking(s) => crate::alg_layered::p1cycles::process(s, a, graph, random),
         PipelineStep::Layering(s) => crate::alg_layered::p2layers::process(s, a, graph, random),
         PipelineStep::CrossingMinimization(s) => crate::alg_layered::p3order::process(s, a, graph, random),
-        PipelineStep::NodePlacement(s) => {
-            before_node_placement(a, graph);
-            crate::alg_layered::p4nodes::process(s, a, graph, random)
-        }
+        PipelineStep::NodePlacement(s) => crate::alg_layered::p4nodes::process(s, a, graph, random),
         PipelineStep::EdgeRouting(s) => crate::alg_layered::p5edges::process(s, a, graph, random),
     }
 }
@@ -228,10 +215,7 @@ fn layout(
             PipelineStep::CrossingMinimization(s) => {
                 crate::alg_layered::p3order::process(s, a, lgraph, random)?
             }
-            PipelineStep::NodePlacement(s) => {
-                before_node_placement(a, lgraph);
-                crate::alg_layered::p4nodes::process(s, a, lgraph, random)?
-            }
+            PipelineStep::NodePlacement(s) => crate::alg_layered::p4nodes::process(s, a, lgraph, random)?,
             PipelineStep::EdgeRouting(s) => crate::alg_layered::p5edges::process(s, a, lgraph, random)?,
         }
     }

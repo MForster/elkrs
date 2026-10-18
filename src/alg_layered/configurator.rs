@@ -219,6 +219,10 @@ fn phase_independent_configuration(
         configuration.add_before(LayeredPhases::P4_NODE_PLACEMENT, internal_greedy_type);
     }
 
+    if crate::alg_layered::processors::APPLICATION_STEP.get().is_some() {
+        configuration.add_before(LayeredPhases::P4_NODE_PLACEMENT, Ips::APPLICATION_STEP);
+    }
+
     if props.get::<LayerUnzippingStrategy>(&lopts::LAYER_UNZIPPING_STRATEGY)
         == LayerUnzippingStrategy::ALTERNATING
     {

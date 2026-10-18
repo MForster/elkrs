@@ -62,6 +62,11 @@ use crate::alg_layered::graph::{LGraphArena, LGraphId};
 use crate::alg_layered::p3order::layer_sweep::{self, CrossMinType};
 use crate::alg_layered::phases::IntermediateProcessorStrategy as Ips;
 
+/// A step an embedding application runs on every graph before node
+/// placement, after crossing minimization, greedy switch and the self-loop
+/// ports' restoring, as the processor `APPLICATION_STEP`; not in ELK.
+pub static APPLICATION_STEP: std::sync::OnceLock<fn(&mut LGraphArena, LGraphId)> = std::sync::OnceLock::new();
+
 /// Dispatches an intermediate processor.
 pub fn process(
     strategy: Ips,
@@ -118,6 +123,12 @@ pub fn process(
         Ips::REVERSED_EDGE_RESTORER => reversed_edge_restorer::process(a, graph),
         Ips::SELF_LOOP_PREPROCESSOR => self_loop_pre_processor::process(a, graph),
         Ips::SELF_LOOP_PORT_RESTORER => self_loop_port_restorer::process(a, graph),
+        Ips::APPLICATION_STEP => {
+            if let Some(step) = APPLICATION_STEP.get() {
+                step(a, graph);
+            }
+            Ok(())
+        }
         Ips::SELF_LOOP_ROUTER => self_loop_router::process(a, graph, random),
         Ips::SELF_LOOP_POSTPROCESSOR => self_loop_post_processor::process(a, graph),
         Ips::ONE_SIDED_GREEDY_SWITCH => {
